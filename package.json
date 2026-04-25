@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "start": "next start",
+    "postbuild": "echo 'Run node scripts/migrate-db.mjs before start'",
+    "start": "node scripts/migrate-db.mjs && next start",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "scrape": "tsx scripts/scrape.ts"
