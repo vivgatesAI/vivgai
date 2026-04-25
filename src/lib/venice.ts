@@ -116,25 +116,35 @@ export async function veniceChat(systemPrompt: string, userPrompt: string, model
   return data.choices?.[0]?.message?.content || ''
 }
 
-/** Fetch articles page from gaiinsights.com */
+/** Fetch article URLs from gaiinsights.com (articles page + ratings page) */
 export async function fetchArticleUrls(): Promise<string[]> {
-  const data = await veniceScrape('https://gaiinsights.com/articles')
-  const content = data.content || ''
-
-  const urlPattern = /https?:\/\/[^\)\s\|\"<>]+/g
-  const urls = content.match(urlPattern) || []
+  const pages = [
+    'https://gaiinsights.com/articles',
+    'https://www.gaiinsights.com/ratings',
+  ]
 
   const seen = new Set<string>()
   const articleUrls: string[] = []
 
-  for (let rawUrl of urls) {
-    const url = rawUrl.replace(/[.,;:]+$/, '')
-    if (url.includes('gaiinsights.com')) continue
-    if (url.includes('linkedin.com') || url.includes('youtube.com') || url.includes('hubspot')) continue
-    const base = url.split('?')[0].split('&')[0]
-    if (seen.has(base)) continue
-    seen.add(base)
-    articleUrls.push(base)
+  for (const pageUrl of pages) {
+    try {
+      const data = await veniceScrape(pageUrl)
+      const content = data.content || ''
+      const urlPattern = /https?:\/\/[^\)\s\|\"<>]+/g
+      const urls = content.match(urlPattern) || []
+
+      for (let rawUrl of urls) {
+        const url = rawUrl.replace(/[.,;:]+$/, '')
+        if (url.includes('gaiinsights.com')) continue
+        if (url.includes('linkedin.com') || url.includes('youtube.com') || url.includes('hubspot.com')) continue
+        const base = url.split('?')[0].split('&')[0]
+        if (seen.has(base)) continue
+        seen.add(base)
+        articleUrls.push(base)
+      }
+    } catch (e) {
+      console.error(`Failed to fetch ${pageUrl}:`, e)
+    }
   }
 
   return articleUrls
@@ -161,17 +171,21 @@ export function chunkText(text: string, maxChars: number = 1000, overlap: number
   return chunks
 }
 
-/** Extract title from markdown */
+/** Extract title from markdown — strips markdown links/images */
 export function extractTitle(md: string): string {
   for (const line of md.split('\n')) {
     const trimmed = line.trim()
     if (trimmed.startsWith('#') && !trimmed.startsWith('##')) {
-      return trimmed.replace(/^#+\s*/, '').trim()
+      // Strip markdown links: [text](url) → text
+      return trimmed.replace(/^#+\s*/, '').replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/\s{2,}/g, ' ').trim()
     }
   }
   for (const line of md.split('\n')) {
     const trimmed = line.trim()
-    if (trimmed.length > 5) return trimmed.slice(0, 100)
+    if (trimmed.length > 5) {
+      // Strip markdown links from first meaningful line too
+      return trimmed.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/\s{2,}/g, ' ').slice(0, 100)
+    }
   }
   return 'Untitled'
 }
