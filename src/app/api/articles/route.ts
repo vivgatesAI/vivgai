@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   const rating = searchParams.get('rating')   // Essential, Important, Optional
   const source = searchParams.get('source')
   const q = searchParams.get('q')            // search title
-  const sort = searchParams.get('sort') || 'rated_date'  // rated_date, title, source
+  const sort = searchParams.get('sort') || 'id'          // id, rated_date, title, source, scraped_at
   const order = searchParams.get('order') || 'desc'
   const limit = parseInt(searchParams.get('limit') || '100')
   const offset = parseInt(searchParams.get('offset') || '0')
@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
   }
 
   const validSorts: Record<string, string> = {
+    id: 'id',
     rated_date: 'ratedDate',
     title: 'title',
     source: 'source',

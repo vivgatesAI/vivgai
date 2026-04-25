@@ -63,7 +63,7 @@ export default function Home() {
   // Library filters
   const [filterRating, setFilterRating] = useState<string>('')
   const [filterSource, setFilterSource] = useState<string>('')
-  const [filterSort, setFilterSort] = useState<string>('rated_date')
+  const [filterSort, setFilterSort] = useState<string>('id')
   const [filterOrder, setFilterOrder] = useState<string>('desc')
   const [filterSearch, setFilterSearch] = useState<string>('')
   const [filterPage, setFilterPage] = useState(0)
@@ -209,7 +209,8 @@ export default function Home() {
               </select>
               <select value={filterSort} onChange={e => setFilterSort(e.target.value)}
                 className="px-3 py-1.5 text-sm rounded-md" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--fg)' }}>
-                <option value="rated_date">By Date</option>
+                <option value="id">Newest</option>
+                <option value="rated_date">By Rated Date</option>
                 <option value="title">By Title</option>
                 <option value="source">By Source</option>
                 <option value="rating">By Rating</option>
