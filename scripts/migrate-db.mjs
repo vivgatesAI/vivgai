@@ -71,19 +71,19 @@ async function migrate() {
   try {
     await prisma.$executeRawUnsafe(`ALTER TABLE articles ADD COLUMN IF NOT EXISTS rating TEXT`)
     console.log('✅ rating column ready')
-  } catch (e: any) {
+  } catch (e) {
     console.log('rating column may already exist:', e.message?.slice(0, 80))
   }
   try {
     await prisma.$executeRawUnsafe(`ALTER TABLE articles ADD COLUMN IF NOT EXISTS rated_date DATE`)
     console.log('✅ rated_date column ready')
-  } catch (e: any) {
+  } catch (e) {
     console.log('rated_date column may already exist:', e.message?.slice(0, 80))
   }
   try {
     await prisma.$executeRawUnsafe(`ALTER TABLE articles ADD COLUMN IF NOT EXISTS rationale TEXT`)
     console.log('✅ rationale column ready')
-  } catch (e: any) {
+  } catch (e) {
     console.log('rationale column may already exist:', e.message?.slice(0, 80))
   }
 
