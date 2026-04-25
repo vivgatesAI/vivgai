@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Article {
+  id             Int      @id @default(autoincrement())
+  url            String   @unique
+  title          String
+  source         String
+  contentMd      String   @map("content_md")
+  contentLength  Int      @map("content_length")
+  scrapedAt      DateTime @map("scraped_at") @default(now())
+  contentHash    String   @map("content_hash") @db.VarChar(32)
+  chunks         Chunk[]
+
+  @@map("articles")
+}
+
+model Chunk {
+  id         Int     @id @default(autoincrement())
+  articleId  Int     @map("article_id")
+  chunkIndex Int     @map("chunk_index")
+  chunkText  String  @map("chunk_text") @db.Text
+  article    Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@map("chunks")
+}
+
+model ScrapeLog {
+  id            Int      @id @default(autoincrement())
+  articlesFound Int      @map("articles_found")
+  articlesNew   Int      @map("articles_new")
+  scrapedAt     DateTime @map("scraped_at") @default(now())
+  status        String   @default("success")
+
+  @@map("scrape_logs")
+}
