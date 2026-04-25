@@ -1,0 +1,10 @@
+import psycopg2
+conn = psycopg2.connect(host='shortline.proxy.rlwy.net', port=25665, dbname='railway', user='postgres', password='zPkSndmnMPjAdGkViyTolhREvHLLDJXx', sslmode='require')
+cur = conn.cursor()
+cur.execute('SELECT COUNT(*) FROM articles')
+print(f'Articles: {cur.fetchone()[0]}')
+cur.execute('SELECT COUNT(*) FROM chunks')
+print(f'Chunks: {cur.fetchone()[0]}')
+cur.execute('SELECT COUNT(*) FROM chunks WHERE embedding IS NOT NULL')
+print(f'With embeddings: {cur.fetchone()[0]}')
+conn.close()

@@ -8,14 +8,17 @@ datasource db {
 }
 
 model Article {
-  id             Int      @id @default(autoincrement())
-  url            String   @unique
+  id             Int       @id @default(autoincrement())
+  url            String    @unique
   title          String
   source         String
-  contentMd      String   @map("content_md")
-  contentLength  Int      @map("content_length")
-  scrapedAt      DateTime @map("scraped_at") @default(now())
-  contentHash    String   @map("content_hash") @db.VarChar(32)
+  contentMd      String    @map("content_md")
+  contentLength  Int       @map("content_length")
+  scrapedAt      DateTime  @map("scraped_at") @default(now())
+  contentHash    String    @map("content_hash") @db.VarChar(32)
+  rating         String?
+  ratedDate      DateTime? @map("rated_date")
+  rationale      String?   @db.Text
   chunks         Chunk[]
 
   @@map("articles")

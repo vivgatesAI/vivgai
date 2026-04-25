@@ -67,16 +67,29 @@ async function migrate() {
     console.log('HNSW index note:', e.message?.slice(0, 100))
   }
 
-  // Add any missing columns from Prisma schema that might not exist
+  // Add new columns for ratings if they don't exist
   try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE articles ADD COLUMN IF NOT EXISTS content_md TEXT NOT NULL DEFAULT ''`)
-  } catch (e) { /* column exists */ }
+    await prisma.$executeRawUnsafe(`ALTER TABLE articles ADD COLUMN IF NOT EXISTS rating TEXT`)
+    console.log('✅ rating column ready')
+  } catch (e: any) {
+    console.log('rating column may already exist:', e.message?.slice(0, 80))
+  }
   try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE articles ADD COLUMN IF NOT EXISTS content_length INTEGER NOT NULL DEFAULT 0`)
-  } catch (e) { /* column exists */ }
+    await prisma.$executeRawUnsafe(`ALTER TABLE articles ADD COLUMN IF NOT EXISTS rated_date DATE`)
+    console.log('✅ rated_date column ready')
+  } catch (e: any) {
+    console.log('rated_date column may already exist:', e.message?.slice(0, 80))
+  }
   try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE articles ADD COLUMN IF NOT EXISTS content_hash VARCHAR(32) NOT NULL DEFAULT ''`)
-  } catch (e) { /* column exists */ }
+    await prisma.$executeRawUnsafe(`ALTER TABLE articles ADD COLUMN IF NOT EXISTS rationale TEXT`)
+    console.log('✅ rationale column ready')
+  } catch (e: any) {
+    console.log('rationale column may already exist:', e.message?.slice(0, 80))
+  }
+
+  // Add indexes for filtering
+  await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_articles_rating ON articles(rating)`)
+  await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_articles_rated_date ON articles(rated_date DESC)`)
 
   await prisma.$disconnect()
   console.log('Migration complete!')
