@@ -2,6 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { veniceEmbedQuery, veniceChat } from '@/lib/venice'
 
+/** Retry with exponential backoff */
+async function retryChat(systemPrompt: string, userPrompt: string, retries = 3): Promise<string> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await veniceChat(systemPrompt, userPrompt)
+    } catch (err: any) {
+      const is429 = err?.message?.includes('429') || err?.message?.includes('overloaded')
+      if (is429 && i < retries - 1) {
+        const delay = Math.pow(2, i) * 2000 // 2s, 4s, 8s
+        console.log(`Chat 429, retrying in ${delay}ms (attempt ${i + 1}/${retries})`)
+        await new Promise(r => setTimeout(r, delay))
+        continue
+      }
+      throw err
+    }
+  }
+  throw new Error('Chat failed after retries')
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const q = searchParams.get('q') || ''
@@ -64,18 +83,23 @@ export async function GET(request: NextRequest) {
       })),
     }
 
-    // Optional AI summary
+    // Optional AI summary (with retry for 429s)
     if (summarize && topResults.length > 0) {
-      const contextParts = topResults.map(r =>
-        `--- ${r.title} (${r.source}) ---\n${r.chunk_text}\n`
-      )
-      const context = contextParts.join('\n')
+      try {
+        const contextParts = topResults.map(r =>
+          `--- ${r.title} (${r.source}) ---\n${r.chunk_text}\n`
+        )
+        const context = contextParts.join('\n')
 
-      const summary = await veniceChat(
-        'You are a research assistant. Answer the user\'s question based on the provided article excerpts. Cite sources by name. Be thorough but concise.',
-        `Based on these article excerpts:\n\n${context}\n\nQuestion: ${q}`
-      )
-      response.summary = summary
+        const summary = await retryChat(
+          'You are a research assistant. Answer the user\'s question based on the provided article excerpts. Cite sources by name. Be thorough but concise.',
+          `Based on these article excerpts:\n\n${context}\n\nQuestion: ${q}`
+        )
+        response.summary = summary
+      } catch (err) {
+        console.error('Summary failed (returning results without summary):', err)
+        response.summaryError = 'AI summary temporarily unavailable — results still shown below'
+      }
     }
 
     return NextResponse.json(response)

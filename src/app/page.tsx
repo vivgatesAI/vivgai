@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Search, Database, Zap, ExternalLink, Clock, Hash, Sparkles, ArrowRight, RefreshCw } from 'lucide-react'
+import { Search, Database, Zap, ExternalLink, Clock, Hash, Sparkles, ArrowRight, RefreshCw, Download } from 'lucide-react'
 
 interface Article {
   id: number
@@ -30,6 +30,7 @@ export default function Home() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SemanticResult[]>([])
   const [summary, setSummary] = useState('')
+  const [summaryError, setSummaryError] = useState('')
   const [articles, setArticles] = useState<Article[]>([])
   const [sources, setSources] = useState<SourceInfo[]>([])
   const [loading, setLoading] = useState(false)
@@ -65,11 +66,13 @@ export default function Home() {
     setLoading(true)
     setResults([])
     setSummary('')
+    setSummaryError('')
     try {
       const res = await fetch(`/api/semantic?q=${encodeURIComponent(query)}&limit=5&summarize=true`)
       const data = await res.json()
       setResults(data.results || [])
       setSummary(data.summary || '')
+      setSummaryError(data.summaryError || '')
     } catch (err) {
       console.error(err)
     } finally {
@@ -84,11 +87,16 @@ export default function Home() {
       const data = await res.json()
       alert(`Scraped: ${data.new} new, ${data.skipped} existing, ${data.errors} errors`)
       await fetchArticles()
+      await fetchSources()
     } catch (err) {
       alert('Scrape failed: ' + err)
     } finally {
       setScrapeLoading(false)
     }
+  }
+
+  function handleDownload(type: 'today' | 'all') {
+    window.open(`/api/download?type=${type}`, '_blank')
   }
 
   return (
@@ -105,11 +113,23 @@ export default function Home() {
               <p className="text-[11px] text-cream/40 -mt-0.5">AI Article Intelligence</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <a href="https://gaiinsights.com/articles" target="_blank" rel="noopener"
               className="text-xs text-cream/50 hover:text-cream/80 transition-colors flex items-center gap-1">
               <ExternalLink size={12} /> Source
             </a>
+            <div className="relative group">
+              <button
+                onClick={() => handleDownload('today')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-200 hover:bg-surface-300 text-cream/70 hover:text-cream text-xs font-medium transition-colors"
+              >
+                <Download size={12} /> MD
+              </button>
+              <div className="absolute right-0 top-full mt-1 hidden group-hover:flex flex-col bg-surface-100 border border-surface-300/50 rounded-xl shadow-xl z-50 min-w-[140px]">
+                <button onClick={() => handleDownload('today')} className="px-4 py-2 text-xs text-cream/70 hover:text-cream hover:bg-surface-200 text-left rounded-t-xl">Today&apos;s articles</button>
+                <button onClick={() => handleDownload('all')} className="px-4 py-2 text-xs text-cream/70 hover:text-cream hover:bg-surface-200 text-left rounded-b-xl">All articles</button>
+              </div>
+            </div>
             <button
               onClick={handleScrape}
               disabled={scrapeLoading}
@@ -191,6 +211,11 @@ export default function Home() {
                 <div className="text-cream/90 leading-relaxed whitespace-pre-line text-sm">{summary}</div>
               </div>
             )}
+            {summaryError && !summary && (
+              <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300/80 text-sm">
+                ⚠️ {summaryError}
+              </div>
+            )}
 
             {/* Results */}
             {results.length > 0 ? (
@@ -250,7 +275,10 @@ export default function Home() {
                       <span className="flex items-center gap-1"><Clock size={10} />{new Date(a.scrapedAt).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  <ArrowRight size={16} className="text-cream/20 shrink-0 ml-3" />
+                  <a href={`/api/download?type=all&id=${a.id}`} title="Download MD"
+                    className="text-cream/30 hover:text-brand-300 transition-colors ml-3 shrink-0">
+                    <Download size={16} />
+                  </a>
                 </div>
               </div>
             ))}
