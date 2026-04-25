@@ -1,0 +1,16 @@
+import psycopg2, sys
+sys.stdout.reconfigure(encoding='utf-8')
+conn = psycopg2.connect(host='shortline.proxy.rlwy.net', port=25665, dbname='railway', user='postgres', password='zPkSndmnMPjAdGkViyTolhREvHLLDJXx', sslmode='require')
+cur = conn.cursor()
+cur.execute("SELECT COUNT(*) FROM articles")
+print(f'Total articles: {cur.fetchone()[0]}')
+cur.execute("SELECT COUNT(*) FROM articles WHERE rating IS NOT NULL")
+print(f'With rating: {cur.fetchone()[0]}')
+cur.execute("SELECT url, rating FROM articles WHERE url LIKE '%berkeley%'")
+print(f'Berkeley articles: {cur.fetchall()}')
+cur.execute("SELECT url, rating FROM articles WHERE url LIKE '%thehill%'")
+print(f'TheHill articles: {cur.fetchall()}')
+cur.execute("SELECT url FROM articles LIMIT 3")
+for row in cur.fetchall():
+    print(f'  URL: {row[0][:80]}')
+conn.close()
